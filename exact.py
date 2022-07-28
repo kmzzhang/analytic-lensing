@@ -8,13 +8,22 @@ from solver import multi_quartic
 def magnification(xs, ys, s, q, n_max=10, laguerre=False, eps=1e-12, eps_check=1e-4):
     # calculate light-curve using exact semi-analytic approach
     # xs and ys are 1D arrays of source trajectory
+    
+    # source trajectory in complex coordinates
+    # note that zeta
     zeta = xs + ys * 1j
     zetac = np.conj(zeta)
+    
+    # z_stationary is the unperturbed location of the weakly perturbed image
+    # i.e. one of the two solutions to "zeta = z-1/z_conj" that has Real(z)<0
     z_stationary = zeta / 2
     z_stationary2 = (zeta*zetac*(4+zeta*zetac))**0.5 / 2 / zetac
     major = np.real(zeta) > 0
     z_stationary[major] -= z_stationary2[major]
     z_stationary[~major] += z_stationary2[~major]
+    
+    # now let's use laguerre's or Newton's method to find one quintic root
+    # using z_stationary as the initial guess
 
     if laguerre:
         for i in range(n_max):
@@ -43,11 +52,20 @@ def magnification(xs, ys, s, q, n_max=10, laguerre=False, eps=1e-12, eps_check=1
                 break
             df = dpoly(s, q, zeta[mask], zetac[mask], z_stationary[mask])
             z_stationary[mask] -= f[mask] / df
+            
+    # after refinement z_stationary becomes roots of the 5th order polynomial
+    # allowing us to transform the lens equation to a 4th order polynomial
     zs = solve_four(s, q, zeta, zetac, z_stationary, eps_check)
+    
+    # add back the weakly perturbed image solution
     zs = np.c_[np.array(zs).T,z_stationary].T
 
+    # calculate the jacobian at each image location
     jac = 1-np.abs(1/zs**2+q/(zs-s)**2)**2
     mag = np.abs(1/jac)
+    
+    # invalid image locations are marked with -999
+    # and does not contribute to the total magnification
     mag[zs == -999] = 0
     mag = mag.sum(0)
     return mag
