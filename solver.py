@@ -37,7 +37,7 @@ def multi_quadratic(a0, b0, c0):
 def fast_cubic(a, b, c, d, all_roots=True):
     d0 = b**2-3*a*c
     d1 = 2*b**3-9*a*b*c+27*a**2*d
-    d2 = (d1**2-4*d0**3+0j)**0.5
+    d2 = np.sqrt(d1**2-4*d0**3+0j)
     
     d3 = d1-d2
     d3[d2 == d1] += 2*d2[d2 == d1]
@@ -83,7 +83,7 @@ def multi_quartic(a0, b0, c0, d0, e0):
     r = 3*a02*a02 - b*a02 + c*a0 - d
 
     # One root of the cubic equation
-    z0 = fast_cubic(1, p, r, p*r - 0.5*q*q, all_roots=True)[0]
+    z0 = fast_cubic(1, p, r, p*r - 0.5*q*q, all_roots=False)
 
     # Additional variables
     s = np.sqrt(2*p + 2*z0 + 0j)
